@@ -18,23 +18,24 @@ def init_registers_index(jitter):
         regs_name[index] = reg
         index += 1
     try:
-        jitter.jit.context.regs_index = regs_index
-        jitter.jit.context.regs_name = regs_name
-    except:
         jitter.jit.codegen.regs_index = regs_index
         jitter.jit.codegen.regs_name = regs_name
+    except:
+        # codegen does not exit for llvm
+        class Save_reg : pass
+        jitter.jit.codegen = Save_reg()
+        jitter.jit.codegen.regs_index = regs_index
+        jitter.jit.codegen.regs_name = regs_name
+        
     
     return len(regs_index)
 
 def enable_taint_analysis(jitter, nb_colors=1):
     """ Init all component of the taint analysis engine """
-
-    try :
-        # Necessary to the llvm jitter
+    if isinstance(jitter.jit, JitCore_LLVM):
         jitter.jit.taint = True
         jitter.jit.context.nb_colors = nb_colors
-    except:
-        # Enable generation of C code analysing taint
+    else:
         jitter.jit.codegen = makeTaintGen(jitter.C_Gen, jitter.ir_arch)
         jitter.nb_colors = nb_colors
     nb_regs = init_registers_index(jitter)
@@ -53,7 +54,12 @@ def disable_taint_analysis(jitter):
 # API usage examples
 
 def on_taint_register(jitter):
-    for color in range(jitter.nb_colors):
+    try :
+        nb_colors = jitter.nb_colors
+    except:
+        #attribute nb_color is not in jitter in llvm
+        nb_colors = jitter.jit.context.nb_colors
+    for color in range(nb_colors):
         last_regs = jitter.taint.last_tainted_registers(color)
         if last_regs:
             print("[Color:%s] Taint registers" % (color))
@@ -64,7 +70,12 @@ def on_taint_register(jitter):
     return True
 
 def on_untaint_register(jitter):
-    for color in range(jitter.nb_colors):
+    try :
+        nb_colors = jitter.nb_colors
+    except:
+        #attribute nb_color is not in jitter in llvm
+        nb_colors = jitter.jit.context.nb_colors
+    for color in range(nb_colors):
         last_regs = jitter.taint.last_untainted_registers(color)
         if last_regs:
             print("[Color:%s] Untaint registers" % (color))
@@ -76,7 +87,12 @@ def on_untaint_register(jitter):
     return True
 
 def on_taint_memory(jitter):
-    for color in range(jitter.nb_colors):
+    try :
+        nb_colors = jitter.nb_colors
+    except:
+        #attribute nb_color does not exist
+        nb_colors = jitter.jit.context.nb_colors
+    for color in range(nb_colors):
         last_mem = jitter.taint.last_tainted_memory(color)
         if last_mem:
             print("[Color:%s] Taint memory" % (color))
@@ -85,7 +101,12 @@ def on_taint_memory(jitter):
     return True
 
 def on_untaint_memory(jitter):
-    for color in range(jitter.nb_colors):
+    try :
+        nb_colors = jitter.nb_colors
+    except:
+        #attribute nb_color does not exist
+        nb_colors = jitter.jit.context.nb_colors
+    for color in range(nb_colors):
         last_mem = jitter.taint.last_untainted_memory(color)
         if last_mem:
             print("[Color%s] Untaint memory" % (color))
@@ -95,7 +116,12 @@ def on_untaint_memory(jitter):
     return True
 
 def display_all_taint(jitter):
-    for color in range(jitter.nb_colors):
+    try :
+        nb_colors = jitter.nb_colors
+    except:
+        #attribute nb_color is not in jitter in llvm
+        nb_colors = jitter.jit.context.nb_colors
+    for color in range(nb_colors):
         regs, mems = jitter.taint.get_all_taint(color)
         print("\n","_"*20)
         print("Color: %s" % (color))
@@ -109,7 +135,12 @@ def display_all_taint(jitter):
         print("_"*20,"\n")
 
 def is_taint_vanished(jitter):
-    for color in range(jitter.nb_colors):
+    try :
+        nb_colors = jitter.nb_colors
+    except:
+        #attribute nb_color is not in jitter in llvm
+        nb_colors = jitter.jit.context.nb_colors
+    for color in range(nb_colors):
         regs, mems = jitter.taint.get_all_taint(color)
         if regs or mems:
             return # There is still some taint

@@ -1,5 +1,6 @@
 from commons import *
 from miasm.core.interval import interval
+from miasm.analysis.taint_helpers import display_all_taint
 
 def test_api():
     """Test API

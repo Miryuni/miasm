@@ -29,12 +29,11 @@ interval_tree_new_llvm(char* ptr){
 void
 taint_merge_interval_tree(signed long offset, char* ptr_new, char* ptr_tmp)
 {
-   //fprintf(stderr, "Enter : taint_merge_interval_tree\n ");
    struct rb_root interval_tree_new, interval_tree_tmp;
    memcpy(&interval_tree_new, ptr_new, 4);
    memcpy(&interval_tree_tmp, ptr_tmp, 4);
    interval_tree_merge(&interval_tree_new, &interval_tree_tmp, offset);
-   //fprintf(stderr, "Exit : taint_merge_interval_tree\n ");
+   memcpy(ptr_new, (char*)&interval_tree_new, 4);
 
 }
 
@@ -49,7 +48,6 @@ get_generic_structure(JitCpu* jitter,
 {
     //fprintf(stderr, "Enter : get_generic_structure\n");
     struct rb_root structure_interval_tree;
-    long test = 0;
    // fprintf(stderr, "Get generic\n");
    // fprintf(stderr, "type : %lld, value %lld \n", type, register_index);
    // fprintf(stderr, "\tThe interval: %ld -> %ld\n", interval.start, interval.last);
@@ -60,10 +58,6 @@ get_generic_structure(JitCpu* jitter,
                                                            interval);
     }
     else if(type == MEM){
-        if (interval.start < test || interval.last <test){
-            fprintf(stderr,"There is a problem here I think");
-            exit(1);
-        }
         structure_interval_tree = taint_get_memory(jitter->taint->taint,
                                                    color_index,
                                                    interval);
@@ -72,6 +66,10 @@ get_generic_structure(JitCpu* jitter,
     {
         fprintf(stderr, "Can't get an other structure than registers or memory\n");
         exit(1);
+    }
+    if(rb_first(&structure_interval_tree)!= NULL){
+        fprintf(stderr, "register_index: %lld\n", register_index);
+        interval_tree_print(&structure_interval_tree);
     }
     memcpy(ptr, (char*)&structure_interval_tree, 4);
     //fprintf(stderr, "Exit : get_generic_structure\n");
@@ -89,7 +87,6 @@ taint_generic_structure(uint64_t fully_tainted,
                         char* ptr_before,
                         char* ptr_new)
 {
-    //fprintf(stderr,"Enter : taint_generic_structure\n");
     struct rb_root taint_interval_tree_before;
     struct rb_root taint_interval_tree_new;
     memcpy(&taint_interval_tree_before, ptr_before, 4);
@@ -125,13 +122,11 @@ taint_generic_structure(uint64_t fully_tainted,
 
 uint64_t check_rb_tree_not_empty(char* ptr)
 {
-    //fprintf(stderr,"Enter : check_rb_tree_not_empty\n");
     uint64_t fully_tainted = 0;
     struct rb_root interval_tree;
     memcpy(&interval_tree, ptr,4);
-    if(rb_first(&interval_tree)!= NULL){
+    if(rb_first(&interval_tree) != NULL){
         fully_tainted = 1;
     }
-    //fprintf(stderr,"Exit : check_rb_tree_not_empty\n");
     return fully_tainted;
 }

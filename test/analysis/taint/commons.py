@@ -69,7 +69,11 @@ def no_mem_tainted(jitter, color):
     assert not last_mem
 
 def no_more_taint(jitter):
-    for color in range(jitter.nb_colors):
+    try:
+        nb_colors = jitter.nb_colors
+    except:
+        nb_colors = jitter.jit.context.nb_colors
+    for color in range(nb_colors):
         regs, mems = jitter.taint.get_all_taint(color)
         assert not regs
         assert not mems

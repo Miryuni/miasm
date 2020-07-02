@@ -102,6 +102,8 @@ class JitCore_LLVM(jitcore.JitCore):
             # Build a function in the context
             self.context.taint = self.taint
             if self.taint:  
+                self.context.regs_index = self.codegen.regs_index
+                self.context.regs_name = self.codegen.regs_name
                 func = LLVMFunction_Taint(self.context, self.FUNCNAME)
             else:
                 func = LLVMFunction(self.context, self.FUNCNAME)

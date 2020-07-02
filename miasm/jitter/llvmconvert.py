@@ -343,7 +343,7 @@ class LLVMContext_JIT(LLVMContext):
             fc_ptr = self.mod.get_global(fc_name)
             addr_casted = builder.zext(addr, LLVMType.IntType(64))
             ret = builder.call(
-                fc_ptr, [func.local_vars["jitcpu"],addr_casted]
+                fc_ptr, [func.local_vars["jitcpu"], addr_casted]
             )
         else:
             # Miasm uses a memory lookup function which returns a bn_t for its
@@ -1746,6 +1746,7 @@ class LLVMFunction(object):
         # Add content
         builder.position_at_end(entry_bbl)
 
+
         # Pre-create label brances for the taint engine
         try:
             assert self.llvm_context.taint == True 
@@ -1764,7 +1765,6 @@ class LLVMFunction(object):
 
         except:
             pass
-        print(asmblock)
         for instr, irblocks in zip(asmblock.lines, irblocks_list):
             instr_attrib, irblocks_attributes = codegen.get_attributes(
                 instr,
@@ -1776,7 +1776,6 @@ class LLVMFunction(object):
             # Pre-create basic blocks
             for irblock in irblocks:
                 self.append_basic_block(irblock.loc_key, overwrite=False)
-            print(instr) 
 
             # Generate the corresponding code
             for index, irblock in enumerate(irblocks):
@@ -1799,6 +1798,7 @@ class LLVMFunction(object):
             assert self.llvm_context.taint == True
             builder.branch(self.bb_list[first_label_bbl.name][first_label_bbl.name + "_taint_0"])
         except:
+            # Except: attribute taint does not exist
             builder.branch(first_label_bbl)
 
 

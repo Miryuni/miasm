@@ -417,6 +417,7 @@ taint_memory(uint64_t fully_tainted,
 
         while(rb_node != NULL)
         {
+            fprintf(stderr, "The rb_node is not NULL;\n");
             node = rb_entry(rb_node, struct interval_tree_node, rb);
             taint_interval.start = current_mem_addr + node->interval.start;
             taint_interval.last = current_mem_addr + node->interval.last;
