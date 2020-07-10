@@ -13,19 +13,23 @@
  * Wrapper for interval_tree_new
  * This function uses the trick described in llvmconvert by fabrice and camille
  *
- * @param ptr A pointer to save the interval_tree created by interval_tree_new
+ * @param interval_tree A pointer to save the interval_tree created by interval_tree_new
 */
 
-_MIASM_EXPORT void interval_tree_new_llvm(char* ptr);
+_MIASM_EXPORT struct rb_root* interval_tree_new_llvm(struct rb_root* interval_tree);
 /**
  * Wrapper for interval_tree_merge.
  * This function uses the trick described in llvmconvert by fabrice and camille
  *
  * @param offset A signed long object which indicate the offset between the trees
- * @param ptr_new The pointer to the new interval_tree
- * @param ptr_tmp The pointer to the interval_tree of the current structure examined
+ * @param interval_tree_new The pointer to the new interval_tree
+ * @param interval_tree_tmp The pointer to the interval_tree of the current structure examined
 */
-_MIASM_EXPORT void taint_merge_interval_tree(signed long offset, char* ptr_new, char* ptr_tmp);
+_MIASM_EXPORT struct rb_root* taint_merge_interval_tree(signed long offset, 
+                                                        struct rb_root* interval_tree_new, 
+                                                        struct rb_root* interval_tree_tmp);
+
+_MIASM_EXPORT void wrap_clean_all_callback_info(JitCpu* jitter);
 
 /**
  * Taint wether a register or a range of the memory
@@ -38,9 +42,10 @@ _MIASM_EXPORT void taint_merge_interval_tree(signed long offset, char* ptr_new, 
  * @param jitter A jitter class. Used to retrieve the taint_t object
  * @param vm_mngr The vm manager
  * @param type The type of the structure
- * @param ptr_before A pointer to retrieve the rb_root of interval_tree_before
- * @param ptr_new A pointer to retrieve the rb_root of interval_tree_new
+ * @param interval_tree_before A pointer to retrieve the rb_root of interval_tree_before
+ * @param interval_tree_new A pointer to retrieve the rb_root of interval_tree_new
 */
+
 _MIASM_EXPORT void taint_generic_structure(uint64_t fully_tainted,
                                            uint64_t index_or_addr,
                                            uint64_t structure_size,
@@ -48,8 +53,8 @@ _MIASM_EXPORT void taint_generic_structure(uint64_t fully_tainted,
                                            JitCpu* jitter,
                                            vm_mngr_t* vm_mngr,
                                            uint64_t type,
-                                           char* ptr_before,
-                                           char* ptr_new);
+                                           struct rb_root* interval_tree_before,
+                                           struct rb_root* interval_tree_new);
 
 /**
  * Get wether the interval_tree of a register or a range of the memory
@@ -60,18 +65,18 @@ _MIASM_EXPORT void taint_generic_structure(uint64_t fully_tainted,
  * @param register_index The index of the register, is equal to 0 when getting memory
  * @param interval The interval examinated of the structure
  * @param type The type of the structure
- * @param ptr_before A pointer to save the interval_tree returned
+ * @param interval_tree_before A pointer to save the interval_tree returned
 */
-_MIASM_EXPORT void get_generic_structure(JitCpu* jitter,
+_MIASM_EXPORT struct rb_root* get_generic_structure(JitCpu* jitter,
                                          uint64_t color_index,
                                          uint64_t register_index,
                                          struct interval interval,
                                          uint64_t type,
-                                         char* ptr);
+                                         struct rb_root* structure_interval_tree);
 
 /**
  * Check that the interval_tree sent is not empty
  *
- * @param ptr A pointer to the interval_tree examined
+ * @param interval_tree A pointer to the interval_tree examined
 */
-_MIASM_EXPORT uint64_t check_rb_tree_not_empty(char* ptr);
+_MIASM_EXPORT uint64_t check_rb_tree_not_empty(struct rb_root* interval_tree);

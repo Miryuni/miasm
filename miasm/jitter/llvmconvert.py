@@ -1498,6 +1498,7 @@ class LLVMFunction(object):
                 # "local" jump, inside this function
                 if offset is None:
                     # Avoid checks on generated label
+                    # An instruction without offset? XXX
                     self.builder.branch(bbl)
                     return
 
@@ -1506,7 +1507,9 @@ class LLVMFunction(object):
                     # forward local jump (ie. next instruction)
                     self.gen_post_code(attrib, offset)
                     self.gen_post_instr_checks(attrib, offset)
-                    self.builder.branch(bbl)
+                    #TODO Make a if-else statement if not using taint_engine
+                    self.builder.branch(self.bb_list[bbl.name][bbl.name + "_taint_0"])
+                    #self.builder.branch(bbl)
                     return
 
                 # reaching this point means a backward local jump, promote it to
@@ -1747,24 +1750,28 @@ class LLVMFunction(object):
         builder.position_at_end(entry_bbl)
 
 
-        # Pre-create label brances for the taint engine
+        # Pre-create label branches for the taint engine
+        # and save the bb created in bb_list
         try:
             assert self.llvm_context.taint == True 
             self.first_label = self.get_basic_block_by_loc_key(asmblock.loc_key)
             self.bb_list = dict()
+
             for irblocks_s in irblocks_list:
                 for irblock in irblocks_s:
                     self.bb_list[str(irblock.loc_key)] = dict()
+
                     for index, assignblk in enumerate(irblock):
                         line_nb = 0
+
                         for dst, src in viewitems(assignblk):
                             label = str(irblock.loc_key)+ "_taint_%d" % line_nb
                             bb = self.builder.append_basic_block(label)
                             self.bb_list[str(irblock.loc_key)][label] = bb
                             line_nb += 1
-
         except:
             pass
+
         for instr, irblocks in zip(asmblock.lines, irblocks_list):
             instr_attrib, irblocks_attributes = codegen.get_attributes(
                 instr,
@@ -1786,6 +1793,13 @@ class LLVMFunction(object):
 
                 if index == 0:
                     self.gen_pre_code(instr_attrib)
+
+                current_block = self.builder.block
+                self.builder.position_at_start(self.bb_list[current_block.name][current_block.name + "_taint_0"])
+                fc_ptr = self.mod.get_global("wrap_clean_all_callback_info")
+                self.builder.call(fc_ptr, [self.local_vars["jitcpu"]])
+                self.builder.position_at_end(current_block)
+
                 self.gen_irblock(instr_attrib, irblocks_attributes[index], instr_offsets, new_irblock)
 
         # Gen finalize (see codegen::CGen) is unrecheable, except with delayslot
