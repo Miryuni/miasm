@@ -123,6 +123,7 @@ def test_callbacks():
         no_reg_tainted(jitter, red)
         last_mem = jitter.taint.last_tainted_memory(red)
         check_mem(interval(last_mem), interval([(0x123FFF8, 0x123FFF8+3)]))
+        print(last_mem)
         last_mem = jitter.taint.last_untainted_memory(red)
         check_mem(interval(last_mem), interval([(0x123FFEC, 0x123FFEC+3)]))
         nothing_tainted(jitter, blue)

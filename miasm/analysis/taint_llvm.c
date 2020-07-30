@@ -32,9 +32,10 @@ taint_merge_interval_tree(signed long offset, struct rb_root* interval_tree_new,
 }
 
 void 
-wrap_clean_all_callback_info(JitCpu* jitter)
+wrap_clean_callback_info(JitCpu* jitter, uint64_t clean_callback_infos, uint64_t color)
 {
-   taint_clean_all_callback_info(jitter->taint->taint);
+   if (clean_callback_infos)
+      taint_clean_callback_info(jitter->taint->taint, color);
 
 }
 
@@ -57,13 +58,13 @@ get_generic_structure(JitCpu* jitter,
                                                    color_index,
                                                    interval);
     } 
-    else
-    {
+
+    else{
         fprintf(stderr, "Can't get an other structure than registers or memory\n");
         exit(1);
     }
-    return structure_interval_tree;
 
+    return structure_interval_tree;
 }
 
 void
@@ -95,11 +96,11 @@ taint_generic_structure(uint64_t fully_tainted,
                      vm_mngr,
                      interval_tree_before,
                      interval_tree_new);
-    else
-    {
+    else{
         fprintf(stderr, "Can't taint other than registers and memory\n");
         exit(1);
     }
+
     interval_tree_free(interval_tree_before);
     interval_tree_free(interval_tree_new);
 }

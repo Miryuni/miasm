@@ -218,7 +218,7 @@ class LLVMContext(object):
 
 class LLVMContext_JIT(LLVMContext):
 
-    """Extend LLVMContext_JIT in order to handle memory management and custom
+    """Extend LLVMContext in order to handle memory management and custom
     operations"""
 
     def __init__(self, library_filenames, ir_arch, name="mod"):
@@ -1506,10 +1506,16 @@ class LLVMFunction(object):
                     offset > attrib.instr.offset):
                     # forward local jump (ie. next instruction)
                     self.gen_post_code(attrib, offset)
+                    try :
+                        if self.check_exceptions :
+                            self.check_taint_memory_exception(self.builder.block.name, attrib.instr.offset)
+                    except: 
+                        pass
                     self.gen_post_instr_checks(attrib, offset)
-                    #TODO Make a if-else statement if not using taint_engine
-                    self.builder.branch(self.bb_list[bbl.name][bbl.name + "_taint_0"])
-                    #self.builder.branch(bbl)
+                    if self.llvm_context.taint : 
+                        self.builder.branch(self.bb_list[bbl.name][bbl.name + "_taint_0"])
+                    else:
+                        self.builder.branch(bbl)
                     return
 
                 # reaching this point means a backward local jump, promote it to
@@ -1527,6 +1533,8 @@ class LLVMFunction(object):
 
         self.gen_post_code(attrib, offset)
         self.assign(dst, PC)
+        if self.check_exceptions:
+            self.check_taint_memory_exception(self.builder.block.name, attrib.instr.offset)
         self.gen_post_instr_checks(attrib, dst)
         self.assign(self.add_ir(ExprInt(0, 8)), ExprId("status", 32))
         self.set_ret(dst)
@@ -1761,14 +1769,14 @@ class LLVMFunction(object):
                 for irblock in irblocks_s:
                     self.bb_list[str(irblock.loc_key)] = dict()
 
-                    for index, assignblk in enumerate(irblock):
-                        line_nb = 0
+                    for assignblk in irblock:
+                        assignblk_line = 0
 
                         for dst, src in viewitems(assignblk):
-                            label = str(irblock.loc_key)+ "_taint_%d" % line_nb
+                            label = str(irblock.loc_key)+ "_taint_%d" % assignblk_line
                             bb = self.builder.append_basic_block(label)
                             self.bb_list[str(irblock.loc_key)][label] = bb
-                            line_nb += 1
+                            assignblk_line += 1
         except:
             pass
 
@@ -1794,11 +1802,15 @@ class LLVMFunction(object):
                 if index == 0:
                     self.gen_pre_code(instr_attrib)
 
-                current_block = self.builder.block
-                self.builder.position_at_start(self.bb_list[current_block.name][current_block.name + "_taint_0"])
-                fc_ptr = self.mod.get_global("wrap_clean_all_callback_info")
-                self.builder.call(fc_ptr, [self.local_vars["jitcpu"]])
-                self.builder.position_at_end(current_block)
+                #TODO Add an if statement for taint engine
+                if self.llvm_context.taint:
+                    current_block = self.builder.block
+                    self.builder.position_at_start(self.bb_list[current_block.name][current_block.name + "_taint_0"])
+                    fc_ptr = self.mod.get_global("wrap_clean_callback_info")
+                    clean_callback = self.builder.load(self.ptr_clean_callback)
+                    color = self.builder.load(self.ptr_current_color)
+                    self.builder.call(fc_ptr, [self.local_vars["jitcpu"], clean_callback, color ])
+                    self.builder.position_at_end(current_block)
 
                 self.gen_irblock(instr_attrib, irblocks_attributes[index], instr_offsets, new_irblock)
 

@@ -250,6 +250,7 @@ taint_register(uint64_t fully_tainted,
             if (taint_analysis->colors[current_color].callback_info->exception_flag
                 & DO_TAINT_REG_CB)
             {
+                fprintf(stderr, "On va update les register callback");
                 vm_mngr->exception_flags |= EXCEPT_TAINT_REG;
                 taint_update_register_callback_info(taint_analysis,
                                                     current_color,
@@ -336,9 +337,11 @@ taint_memory_generic_access(struct taint_t *colors,
     if (access_type == ADD)
         interval_tree_add(colors->colors[color_index].memory,
                           interval);
-    else if (access_type == REMOVE)
+    else if (access_type == REMOVE){
+        fprintf(stderr, " %ld %ld\n", interval.start, interval.last);
         interval_tree_sub(colors->colors[color_index].memory,
                           interval);
+    }
 }
 
 struct rb_root
@@ -417,7 +420,6 @@ taint_memory(uint64_t fully_tainted,
 
         while(rb_node != NULL)
         {
-            fprintf(stderr, "The rb_node is not NULL;\n");
             node = rb_entry(rb_node, struct interval_tree_node, rb);
             taint_interval.start = current_mem_addr + node->interval.start;
             taint_interval.last = current_mem_addr + node->interval.last;

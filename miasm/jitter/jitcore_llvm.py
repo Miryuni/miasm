@@ -42,7 +42,6 @@ class JitCore_LLVM(jitcore.JitCore):
         self.ir_arch = ir_arch
         self.taint = taint
         # Cache temporary dir
-        # TODO:Mighy create another cache temporary dir for taint?
         if self.taint:
             self.tempdir = os.path.join(tempfile.gettempdir(), "miasm_cache_taint")
         else:

@@ -5,6 +5,7 @@ import miasm.jitter.csts as csts
 from miasm.core.interval import interval
 from miasm.analysis.taint_codegen import makeTaintGen
 from miasm.jitter.jitcore_llvm import JitCore_LLVM
+from llvmlite import ir as llvm_ir
 
 
 def init_registers_index(jitter):
@@ -27,7 +28,6 @@ def init_registers_index(jitter):
         jitter.jit.codegen.regs_index = regs_index
         jitter.jit.codegen.regs_name = regs_name
         
-    
     return len(regs_index)
 
 def enable_taint_analysis(jitter, nb_colors=1):
@@ -145,3 +145,20 @@ def is_taint_vanished(jitter):
         if regs or mems:
             return # There is still some taint
     print("\n\n/!\\ All taint is gone ! /!\\\n\n")
+
+def pyt2llvm(size, value):
+    """ Return an LLVM constant with a python integer
+    Made to help writing LLVM IR code
+    """
+    return llvm_ir.Constant(LLVMType.IntType(size),value)
+
+def externalCall(fc_ptr, args, builder,  var_name = ""):
+    """ Save the pointer returned in an allocated space 
+    This trick is often used in LLVM IR to avoid saving
+    structures. We just use their pointer.
+    """
+    rb_root_pointer = builder.alloca(LLVMType.IntType(64))
+    rb_root_u8 = builder.bitcast(rb_root_pointer, llvm_ir.IntType(8).as_pointer())
+    args.append(rb_root_u8)
+    ret = builder.call(fc_ptr, args, name = var_name )
+    return ret
