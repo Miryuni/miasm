@@ -1506,11 +1506,8 @@ class LLVMFunction(object):
                     offset > attrib.instr.offset):
                     # forward local jump (ie. next instruction)
                     self.gen_post_code(attrib, offset)
-                    try :
-                        if self.check_exceptions :
-                            self.check_taint_memory_exception(self.builder.block.name, attrib.instr.offset)
-                    except: 
-                        pass
+                    if self.check_exceptions is not None and self.check_exceptions == True:
+                        self.check_taint_memory_exception(self.builder.block.name, attrib.instr.offset)
                     self.gen_post_instr_checks(attrib, offset)
                     if self.llvm_context.taint : 
                         self.builder.branch(self.bb_list[bbl.name][bbl.name + "_taint_0"])
@@ -1533,7 +1530,7 @@ class LLVMFunction(object):
 
         self.gen_post_code(attrib, offset)
         self.assign(dst, PC)
-        if self.check_exceptions:
+        if self.check_exceptions is not None and self.check_exceptions == True:
             self.check_taint_memory_exception(self.builder.block.name, attrib.instr.offset)
         self.gen_post_instr_checks(attrib, dst)
         self.assign(self.add_ir(ExprInt(0, 8)), ExprId("status", 32))
@@ -1760,25 +1757,22 @@ class LLVMFunction(object):
 
         # Pre-create label branches for the taint engine
         # and save the bb created in bb_list
-        try:
-            assert self.llvm_context.taint == True 
+       
+        if self.llvm_context.taint == True :
             self.first_label = self.get_basic_block_by_loc_key(asmblock.loc_key)
             self.bb_list = dict()
 
             for irblocks_s in irblocks_list:
                 for irblock in irblocks_s:
-                    self.bb_list[str(irblock.loc_key)] = dict()
 
+                    self.bb_list[str(irblock.loc_key)] = dict()
                     for assignblk in irblock:
                         assignblk_line = 0
-
                         for dst, src in viewitems(assignblk):
                             label = str(irblock.loc_key)+ "_taint_%d" % assignblk_line
                             bb = self.builder.append_basic_block(label)
                             self.bb_list[str(irblock.loc_key)][label] = bb
                             assignblk_line += 1
-        except:
-            pass
 
         for instr, irblocks in zip(asmblock.lines, irblocks_list):
             instr_attrib, irblocks_attributes = codegen.get_attributes(
@@ -1802,7 +1796,6 @@ class LLVMFunction(object):
                 if index == 0:
                     self.gen_pre_code(instr_attrib)
 
-                #TODO Add an if statement for taint engine
                 if self.llvm_context.taint:
                     current_block = self.builder.block
                     self.builder.position_at_start(self.bb_list[current_block.name][current_block.name + "_taint_0"])
@@ -1820,11 +1813,9 @@ class LLVMFunction(object):
         # Branch entry_bbl on first label
         builder.position_at_end(entry_bbl)
         first_label_bbl = self.get_basic_block_by_loc_key(asmblock.loc_key)
-        try:
-            assert self.llvm_context.taint == True
+        if self.llvm_context.taint == True:
             builder.branch(self.bb_list[first_label_bbl.name][first_label_bbl.name + "_taint_0"])
-        except:
-            # Except: attribute taint does not exist
+        else:
             builder.branch(first_label_bbl)
 
 
